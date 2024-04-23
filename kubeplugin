@@ -1,18 +1,23 @@
 #!/bin/bash
 
-# Defining and validating arguments
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <namespace> <resource_type> <command>"
-    echo "Example: $0 kube-system pods get"
+# Перевірка наявності аргументів командного рядка
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 <namespace> <kubectl_command>"
     exit 1
 fi
 
+# Оголошення змінних
 NAMESPACE=$1
-RESOURCE_TYPE=$2
-COMMAND=$3
+KUBECTL_COMMAND=$2
 
-# Displaying the table header
-echo "Resource, Namespace, Name, CPU, Memory"
+# Отримання статистики використання ресурсів з Kubernetes та вивід її у форматі "Resource, Namespace, Name, CPU, Memory"
+kubectl $KUBECTL_COMMAND get pods -n $NAMESPACE --no-headers | while read -r line; do
+    # Витягнення імені, CPU та пам'яті з результатів
+    NAME=$(echo "$line" | awk '{print $1}')
+    CPU=$(echo "$line" | awk '{print $2}')
+    MEMORY=$(echo "$line" | awk '{print $3}')
 
-# Running the kubectl command and processing the results
-kubectl $COMMAND $RESOURCE_TYPE -n $NAMESPACE | tail -n +2 | awk -v resType="$RESOURCE_TYPE" -v ns="$NAMESPACE" '{print resType", " ns", "$1", "$2", "$3}'
+    # Вивід статистики у відповідний формат
+    echo "Resource, Namespace, Name, CPU, Memory"
+    echo "Pod, $NAMESPACE, $NAME, $CPU, $MEMORY"
+done
